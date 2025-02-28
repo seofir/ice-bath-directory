@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: { city: string } })
   };
 }
 
-export default async function GymPage({ params, searchParams }: { 
+export default async function GymPage({ params, searchParams: _searchParams }: { 
   params: { city: string },
   searchParams?: { [key: string]: string | string[] | undefined }
 }) {

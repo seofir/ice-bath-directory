@@ -11,7 +11,7 @@ export interface DirectoryListing {
     hasGym?: boolean;
     hasSauna?: boolean;
     hasContrastTherapy?: boolean;
-    [key: string]: any;
+    [key: string]: boolean | string | number | undefined;
   };
   photo?: string;
   booking_appointment_link?: string;

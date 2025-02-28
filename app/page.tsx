@@ -31,7 +31,7 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">No cities found</h2>
             <p className="text-gray-600">
-              We couldn't find any city data at this time. Please add CSV files to the data/cities directory.
+              We couldn&apos;t find any city data at this time. Please add CSV files to the data/cities directory.
             </p>
           </div>
         ) : (

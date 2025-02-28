@@ -48,7 +48,7 @@ export function getCityData(citySlug: string): CityData {
       skip_records_with_error: true
     });
     
-    const listings = records.map((record: any) => {
+    const listings = records.map((record: Record<string, string>) => {
       // Parse the ratings and reviews
       let rating = 0;
       let reviews = 0;
@@ -62,7 +62,7 @@ export function getCityData(citySlug: string): CityData {
       }
       
       // Parse working hours into the expected format
-      let workingHours: { [key: string]: string } = {};
+      const workingHours: { [key: string]: string } = {};
       if (record['Opening Hours']) {
         const hoursText = record['Opening Hours'];
         // Split by commas and format as key-value pairs

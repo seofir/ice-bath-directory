@@ -58,7 +58,7 @@ export default async function ContrastTherapyPage({ params }: { params: { city: 
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">No listings found</h2>
             <p className="text-gray-600">
-              We couldn't find any ice bath facilities with contrast therapy in {cityName} at this time.
+              We couldn&apos;t find any ice bath facilities with contrast therapy in {cityName} at this time.
             </p>
           </div>
         ) : (

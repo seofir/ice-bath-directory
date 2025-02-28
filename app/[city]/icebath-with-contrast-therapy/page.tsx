@@ -27,7 +27,10 @@ export async function generateMetadata({ params }: { params: { city: string } })
   };
 }
 
-export default async function ContrastTherapyPage({ params }: { params: { city: string } }) {
+export default async function ContrastTherapyPage({ params, searchParams }: { 
+  params: { city: string },
+  searchParams?: { [key: string]: string | string[] | undefined }
+}) {
   const citySlug = params.city;
   const cityName = formatCityName(citySlug);
   const { listings } = getCityData(citySlug);

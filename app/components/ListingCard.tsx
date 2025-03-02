@@ -29,6 +29,7 @@ function StarRating({ rating }: { rating: number }) {
 export default function ListingCard({ listing, citySlug }: ListingCardProps) {
   // Debug the listing data
   console.log('Listing data:', listing);
+  console.log('Listing name:', listing.name);
   
   // Format Instagram link if available
   const instagramLink = listing.social && listing.social.includes('@') 
@@ -79,7 +80,7 @@ export default function ListingCard({ listing, citySlug }: ListingCardProps) {
         {/* Header with name and rating */}
         <div className="border-b border-gray-100 pb-4 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {listing.name}
+            {listing.name || listing.site?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || "Unknown Name"}
           </h2>
           {listing.rating !== undefined && listing.rating > 0 && (
             <div className="flex items-center">

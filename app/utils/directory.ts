@@ -32,6 +32,7 @@ export function getCityData(citySlug: string): CityData {
       .join('-');
     
     const filePath = path.join(CITIES_DIR, `${cityName}.csv`);
+    console.log(`Reading file: ${filePath}`);
     
     if (!fs.existsSync(filePath)) {
       console.warn(`Data file for ${cityName} does not exist:`, filePath);
@@ -39,6 +40,7 @@ export function getCityData(citySlug: string): CityData {
     }
     
     const fileContent = fs.readFileSync(filePath, 'utf-8');
+    console.log(`File content length: ${fileContent.length} bytes`);
     
     const records = parse(fileContent, {
       columns: true,
@@ -48,7 +50,11 @@ export function getCityData(citySlug: string): CityData {
       skip_records_with_error: true
     });
     
-    const listings = records.map((record: Record<string, string>) => {
+    console.log(`Raw records for ${cityName}:`, JSON.stringify(records, null, 2));
+    console.log(`Number of records: ${records.length}`);
+    
+    const listings = records.map((record: Record<string, string>, index: number) => {
+      console.log(`Processing record ${index}:`, JSON.stringify(record, null, 2));
       // Parse the ratings and reviews
       let rating = 0;
       let reviews = 0;
@@ -77,10 +83,36 @@ export function getCityData(citySlug: string): CityData {
       
       // Ensure name is properly extracted and cleaned
       let name = '';
-      if (record['Name']) {
+      // First check if the 'Name' field exists with exact casing
+      if (record['Name'] !== undefined && record['Name'] !== null && record['Name'] !== '') {
         name = record['Name'].toString().trim();
         // Remove any non-printable characters that might be causing issues
         name = name.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+        console.log(`Extracted name from 'Name' field: ${name}`);
+      } else {
+        // If 'Name' field is not found or empty, try to find a field with similar name
+        const nameKey = Object.keys(record).find(key => 
+          key.toLowerCase() === 'name' || 
+          key.toLowerCase().includes('name') || 
+          key.toLowerCase() === 'title' || 
+          key.toLowerCase().includes('title')
+        );
+        
+        if (nameKey) {
+          name = record[nameKey].toString().trim();
+          name = name.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+          console.log(`Found name with different casing or similar field '${nameKey}': ${name}`);
+        } else {
+          console.log('Name field missing or empty in record:', JSON.stringify(record, null, 2));
+          // As a last resort, use the first non-empty string field
+          for (const key in record) {
+            if (record[key] && typeof record[key] === 'string' && record[key].trim() !== '') {
+              name = record[key].toString().trim();
+              console.log(`Using first non-empty field '${key}' as name: ${name}`);
+              break;
+            }
+          }
+        }
       }
       
       // Handle special case for "Does it also have a gym?" field

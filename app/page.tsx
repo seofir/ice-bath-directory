@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getCityNames } from './utils/directory';
+import { getCityNames, getCountryNames, getCitiesByCountry, getCountryForCity } from './utils/directory';
 
 export const metadata = {
   title: 'Ice Bath Directory - Find Ice Bath Locations Near You',
@@ -15,7 +15,8 @@ function formatCityName(cityName: string): string {
 }
 
 export default function Home() {
-  const cities = getCityNames();
+  const countries = getCountryNames();
+  const legacyCities = getCityNames().filter(city => !getCountryForCity(city));
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -24,10 +25,10 @@ export default function Home() {
           Ice Bath Directory
         </h1>
         <p className="text-xl text-center text-gray-600 mb-12">
-          Discover ice bath and cold therapy locations in these cities
+          Discover ice bath and cold therapy locations by country and city
         </p>
         
-        {cities.length === 0 ? (
+        {countries.length === 0 && legacyCities.length === 0 ? (
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">No cities found</h2>
             <p className="text-gray-600">
@@ -35,29 +36,73 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cities.map((city) => {
-              const formattedCityName = formatCityName(city);
+          <div className="space-y-12">
+            {/* Countries and their cities */}
+            {countries.map((country) => {
+              const cities = getCitiesByCountry(country);
+              if (cities.length === 0) return null;
+              
               return (
-                <Link
-                  key={city}
-                  href={`/${city.toLowerCase()}`}
-                  className="transform hover:scale-105 transition-transform duration-200"
-                >
-                  <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                    <div className="p-6">
-                      <h2 className="text-2xl font-semibold text-gray-900">{formattedCityName}</h2>
-                      <p className="mt-2 text-gray-600">
-                        View ice bath locations in {formattedCityName}
-                      </p>
-                      <div className="mt-4 flex items-center text-blue-600">
-                        Explore directory →
-                      </div>
-                    </div>
+                <div key={country} className="bg-white rounded-lg shadow-lg p-8">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-6">{country}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {cities.map((city) => {
+                      const formattedCityName = formatCityName(city);
+                      return (
+                        <Link
+                          key={city}
+                          href={`/${city.toLowerCase()}`}
+                          className="transform hover:scale-105 transition-transform duration-200"
+                        >
+                          <div className="bg-blue-50 rounded-lg shadow overflow-hidden">
+                            <div className="p-6">
+                              <h3 className="text-2xl font-semibold text-gray-900">{formattedCityName}</h3>
+                              <p className="mt-2 text-gray-600">
+                                View ice bath locations in {formattedCityName}
+                              </p>
+                              <div className="mt-4 flex items-center text-blue-600">
+                                Explore directory →
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
-                </Link>
+                </div>
               );
             })}
+            
+            {/* Legacy cities (not associated with a country) */}
+            {legacyCities.length > 0 && (
+              <div className="bg-white rounded-lg shadow-lg p-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">Other Cities</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {legacyCities.map((city) => {
+                    const formattedCityName = formatCityName(city);
+                    return (
+                      <Link
+                        key={city}
+                        href={`/${city.toLowerCase()}`}
+                        className="transform hover:scale-105 transition-transform duration-200"
+                      >
+                        <div className="bg-blue-50 rounded-lg shadow overflow-hidden">
+                          <div className="p-6">
+                            <h3 className="text-2xl font-semibold text-gray-900">{formattedCityName}</h3>
+                            <p className="mt-2 text-gray-600">
+                              View ice bath locations in {formattedCityName}
+                            </p>
+                            <div className="mt-4 flex items-center text-blue-600">
+                              Explore directory →
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -33,7 +33,7 @@ export default async function CityPage({ params, searchParams }: {
 }) {
   const citySlug = params.city;
   const cityName = formatCityName(citySlug);
-  const { listings } = getCityData(citySlug);
+  const { listings, country } = getCityData(citySlug);
   const activeFilter = searchParams.filter;
 
   // Filter listings based on the active filter
@@ -80,9 +80,15 @@ export default async function CityPage({ params, searchParams }: {
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
           {getPageTitle()}
         </h1>
-        <p className="text-xl text-gray-600 mb-8">
+        <p className="text-xl text-gray-600 mb-2">
           Find and compare ice bath facilities in {cityName}
         </p>
+        
+        {country && (
+          <p className="text-md text-gray-500 mb-8">
+            Located in {country}
+          </p>
+        )}
 
         {/* Filter Bar */}
         <FilterBar citySlug={citySlug} activeFilter={activeFilter} />
@@ -111,4 +117,4 @@ export default async function CityPage({ params, searchParams }: {
       </div>
     </main>
   );
-} 
+}

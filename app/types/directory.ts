@@ -4,6 +4,7 @@ export interface DirectoryListing {
   phone?: string;
   full_address?: string;
   city?: string;
+  country?: string;
   rating?: number;
   reviews?: number;
   working_hours?: { [key: string]: string };
@@ -22,5 +23,11 @@ export interface DirectoryListing {
 
 export interface CityData {
   cityName: string;
+  country?: string | null;
   listings: DirectoryListing[];
-} 
+}
+
+export interface CountryData {
+  countryName: string;
+  cities: CityData[];
+}

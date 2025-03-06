@@ -1,16 +1,72 @@
 import fs from 'fs';
 import path from 'path';
 import { parse } from 'csv-parse/sync';
-import type { DirectoryListing, CityData } from '../types/directory';
+import type { DirectoryListing, CityData, CountryData } from '../types/directory';
 
-// Path to the cities data directory
+// Path to the data directories
 const CITIES_DIR = path.join(process.cwd(), 'data', 'cities');
+const COUNTRIES_DIR = path.join(process.cwd(), 'data', 'countries');
+
+export function getCountryNames(): string[] {
+  try {
+    // Ensure the directory exists
+    if (!fs.existsSync(COUNTRIES_DIR)) {
+      console.warn('Countries directory does not exist:', COUNTRIES_DIR);
+      return [];
+    }
+    
+    return fs.readdirSync(COUNTRIES_DIR)
+      .filter(file => {
+        const stat = fs.statSync(path.join(COUNTRIES_DIR, file));
+        return stat.isDirectory();
+      });
+  } catch (error) {
+    console.error('Error reading country names:', error);
+    return [];
+  }
+}
+
+export function getCitiesByCountry(countryName: string): string[] {
+  try {
+    const countryDir = path.join(COUNTRIES_DIR, countryName);
+    
+    // Ensure the directory exists
+    if (!fs.existsSync(countryDir)) {
+      console.warn('Country directory does not exist:', countryDir);
+      return [];
+    }
+    
+    return fs.readdirSync(countryDir)
+      .filter(file => file.endsWith('.csv'))
+      .map(file => file.replace('.csv', ''));
+  } catch (error) {
+    console.error(`Error reading cities for country ${countryName}:`, error);
+    return [];
+  }
+}
 
 export function getCityNames(): string[] {
   try {
+    // First check all countries directories (prioritize this structure)
+    const countryCities = getCountryNames()
+      .flatMap(country => getCitiesByCountry(country));
+    
+    // Then check the legacy directory
+    const legacyCities = getLegacyCityNames();
+    
+    // Combine and deduplicate
+    return [...new Set([...countryCities, ...legacyCities])];
+  } catch (error) {
+    console.error('Error reading city names:', error);
+    return [];
+  }
+}
+
+function getLegacyCityNames(): string[] {
+  try {
     // Ensure the directory exists
     if (!fs.existsSync(CITIES_DIR)) {
-      console.warn('Data directory does not exist:', CITIES_DIR);
+      console.warn('Legacy data directory does not exist:', CITIES_DIR);
       return [];
     }
     
@@ -19,9 +75,23 @@ export function getCityNames(): string[] {
       .filter(file => file.endsWith('.csv'))
       .map(file => file.replace('.csv', ''));
   } catch (error) {
-    console.error('Error reading city names:', error);
+    console.error('Error reading legacy city names:', error);
     return [];
   }
+}
+
+export function getCountryForCity(cityName: string): string | null {
+  // Check each country directory for the city
+  for (const country of getCountryNames()) {
+    const countryDir = path.join(COUNTRIES_DIR, country);
+    const cityPath = path.join(countryDir, `${cityName}.csv`);
+    
+    if (fs.existsSync(cityPath)) {
+      return country;
+    }
+  }
+  
+  return null;
 }
 
 export function getCityData(citySlug: string): CityData {
@@ -31,16 +101,22 @@ export function getCityData(citySlug: string): CityData {
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join('-');
     
-    const filePath = path.join(CITIES_DIR, `${cityName}.csv`);
-    console.log(`Reading file: ${filePath}`);
+    // First check if the city exists in a country directory
+    const country = getCountryForCity(cityName);
+    let filePath;
+    
+    if (country) {
+      filePath = path.join(COUNTRIES_DIR, country, `${cityName}.csv`);
+    } else {
+      // Fall back to the legacy directory
+      filePath = path.join(CITIES_DIR, `${cityName}.csv`);
+    }
     
     if (!fs.existsSync(filePath)) {
-      console.warn(`Data file for ${cityName} does not exist:`, filePath);
-      return { cityName: citySlug, listings: [] };
+      return { cityName: citySlug, country, listings: [] };
     }
     
     const fileContent = fs.readFileSync(filePath, 'utf-8');
-    console.log(`File content length: ${fileContent.length} bytes`);
     
     const records = parse(fileContent, {
       columns: true,
@@ -50,11 +126,7 @@ export function getCityData(citySlug: string): CityData {
       skip_records_with_error: true
     });
     
-    console.log(`Raw records for ${cityName}:`, JSON.stringify(records, null, 2));
-    console.log(`Number of records: ${records.length}`);
-    
-    const listings = records.map((record: Record<string, string>, index: number) => {
-      console.log(`Processing record ${index}:`, JSON.stringify(record, null, 2));
+    const listings = records.map((record: Record<string, string>) => {
       // Parse the ratings and reviews
       let rating = 0;
       let reviews = 0;
@@ -83,14 +155,10 @@ export function getCityData(citySlug: string): CityData {
       
       // Ensure name is properly extracted and cleaned
       let name = '';
-      // First check if the 'Name' field exists with exact casing
       if (record['Name'] !== undefined && record['Name'] !== null && record['Name'] !== '') {
         name = record['Name'].toString().trim();
-        // Remove any non-printable characters that might be causing issues
         name = name.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
-        console.log(`Extracted name from 'Name' field: ${name}`);
       } else {
-        // If 'Name' field is not found or empty, try to find a field with similar name
         const nameKey = Object.keys(record).find(key => 
           key.toLowerCase() === 'name' || 
           key.toLowerCase().includes('name') || 
@@ -101,14 +169,10 @@ export function getCityData(citySlug: string): CityData {
         if (nameKey) {
           name = record[nameKey].toString().trim();
           name = name.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
-          console.log(`Found name with different casing or similar field '${nameKey}': ${name}`);
         } else {
-          console.log('Name field missing or empty in record:', JSON.stringify(record, null, 2));
-          // As a last resort, use the first non-empty string field
           for (const key in record) {
             if (record[key] && typeof record[key] === 'string' && record[key].trim() !== '') {
               name = record[key].toString().trim();
-              console.log(`Using first non-empty field '${key}' as name: ${name}`);
               break;
             }
           }
@@ -118,42 +182,62 @@ export function getCityData(citySlug: string): CityData {
       // Handle special case for "Does it also have a gym?" field
       let hasGym = false;
       if (record['Does it also have a gym?']) {
-        const gymValue = record['Does it also have a gym?'].toString().trim();
-        hasGym = gymValue === 'Yes' || gymValue.startsWith('Yes ');
+        const gymValue = record['Does it also have a gym?'].toString().trim().toLowerCase();
+        hasGym = gymValue === 'yes' || gymValue === 'true' || gymValue === '1';
+      }
+      
+      // Handle special case for "Do they also have a sauna?" field
+      let hasSauna = false;
+      if (record['Do they also have a sauna?']) {
+        const saunaValue = record['Do they also have a sauna?'].toString().trim().toLowerCase();
+        hasSauna = saunaValue === 'yes' || saunaValue === 'true' || saunaValue === '1';
+      }
+      
+      // Handle special case for "Ice bath contrast therapy?" field
+      let hasContrastTherapy = false;
+      if (record['Ice bath contrast therapy?']) {
+        const contrastValue = record['Ice bath contrast therapy?'].toString().trim().toLowerCase();
+        hasContrastTherapy = contrastValue === 'yes' || contrastValue === 'true' || contrastValue === '1';
       }
       
       return {
-        name: name,
-        site: record['Website'] || '',
-        phone: record['Phone Number'] || '',
-        full_address: '', // Not available in your CSV
-        city: citySlug,
-        rating: rating,
-        reviews: reviews,
-        working_hours: workingHours,
+        name,
+        phone: record['Phone Number'] || undefined,
+        site: record['Website'] || undefined,
+        social: record['Official Social Account'] || undefined,
+        prices: record['Prices'] || undefined,
+        rating,
+        reviews,
+        working_hours: Object.keys(workingHours).length > 0 ? workingHours : undefined,
         about: {
-          hasGym: hasGym,
-          hasSauna: record['Do they also have a sauna?'] === 'Yes',
-          hasContrastTherapy: record['Ice bath contrast therapy?'] === 'Yes'
-        },
-        photo: '', // Not available in your CSV
-        booking_appointment_link: '', // Not available in your CSV
-        // Additional fields from your CSV
-        prices: record['Prices'] || '',
-        social: record['Official Social Account'] || ''
+          hasGym,
+          hasSauna,
+          hasContrastTherapy
+        }
       } as DirectoryListing;
     });
     
     return {
       cityName: citySlug,
+      country,
       listings
     };
   } catch (error) {
-    console.error(`Error reading data for ${citySlug}:`, error);
-    return { cityName: citySlug, listings: [] };
+    console.error(`Error processing data for ${citySlug}:`, error);
+    return { cityName: citySlug, country: null, listings: [] };
   }
 }
 
 export function getAllCitiesData(): CityData[] {
-  return getCityNames().map(cityName => getCityData(cityName));
-} 
+  return getCityNames().map(city => getCityData(city));
+}
+
+export function getCountriesData(): CountryData[] {
+  return getCountryNames().map(country => {
+    const cities = getCitiesByCountry(country).map(city => getCityData(city));
+    return {
+      countryName: country,
+      cities
+    };
+  });
+}

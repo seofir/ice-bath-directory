@@ -44,7 +44,9 @@ export default function Home() {
               
               return (
                 <div key={country} className="bg-white rounded-lg shadow-lg p-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">{country}</h2>
+                  <Link href={`/country/${country.toLowerCase()}`} className="hover:underline">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-6">{country}</h2>
+                  </Link>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cities.map((city) => {
                       const formattedCityName = formatCityName(city);

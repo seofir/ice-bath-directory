@@ -3,6 +3,8 @@ export interface DirectoryListing {
   site?: string;
   phone?: string;
   full_address?: string;
+  address?: string;
+  about_text?: string;
   city?: string;
   country?: string;
   rating?: number;

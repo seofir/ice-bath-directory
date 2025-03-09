@@ -100,7 +100,10 @@ export default function ListingCard({ listing, citySlug }: ListingCardProps) {
             <h3 className="text-xl font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
               Location & Contact
             </h3>
-            {listing.city && (
+            {listing.address && (
+              <p className="text-gray-800 mb-3">{listing.address}</p>
+            )}
+            {listing.city && !listing.address && (
               <p className="text-gray-800 mb-3">{listing.city}</p>
             )}
             {listing.phone && (
@@ -158,6 +161,16 @@ export default function ListingCard({ listing, citySlug }: ListingCardProps) {
         
         {/* Additional Information */}
         <div className="mt-8 grid md:grid-cols-2 gap-8 pt-6 border-t border-gray-100">
+          {/* About Section */}
+          {listing.about_text && (
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">
+                About
+              </h3>
+              <p className="text-gray-800">{listing.about_text}</p>
+            </div>
+          )}
+          
           {/* Amenities */}
           {listing.about && (
             <div>
@@ -220,4 +233,4 @@ export default function ListingCard({ listing, citySlug }: ListingCardProps) {
       </div>
     </article>
   );
-} 
+}

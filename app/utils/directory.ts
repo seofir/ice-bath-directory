@@ -206,6 +206,8 @@ export function getCityData(citySlug: string): CityData {
         site: record['Website'] || undefined,
         social: record['Official Social Account'] || undefined,
         prices: record['Prices'] || undefined,
+        address: record['Address'] || undefined,
+        about_text: record['About'] || undefined,
         rating,
         reviews,
         working_hours: Object.keys(workingHours).length > 0 ? workingHours : undefined,

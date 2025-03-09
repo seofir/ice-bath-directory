@@ -28,11 +28,27 @@ export function getCountryNames(): string[] {
 
 export function getCitiesByCountry(countryName: string): string[] {
   try {
-    const countryDir = path.join(COUNTRIES_DIR, countryName);
+    // Handle common country name formats (all uppercase like USA, or mixed case)
+    const possibleCountryNames = [
+      countryName,
+      countryName.toUpperCase(),
+      countryName.charAt(0).toUpperCase() + countryName.slice(1).toLowerCase()
+    ];
     
-    // Ensure the directory exists
-    if (!fs.existsSync(countryDir)) {
-      console.warn('Country directory does not exist:', countryDir);
+    let countryDir = '';
+    
+    // Try to find the country directory using different case formats
+    for (const name of possibleCountryNames) {
+      const dir = path.join(COUNTRIES_DIR, name);
+      if (fs.existsSync(dir)) {
+        countryDir = dir;
+        break;
+      }
+    }
+    
+    // If no directory was found, return empty array
+    if (!countryDir) {
+      console.warn('Country directory does not exist for:', countryName);
       return [];
     }
     
@@ -81,13 +97,22 @@ function getLegacyCityNames(): string[] {
 }
 
 export function getCountryForCity(cityName: string): string | null {
-  // Check each country directory for the city
+  // Handle different case formats for city names
+  const possibleCityNames = [
+    cityName,
+    cityName.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-')
+  ];
+  
+  // Check each country directory for the city with different case formats
   for (const country of getCountryNames()) {
     const countryDir = path.join(COUNTRIES_DIR, country);
-    const cityPath = path.join(countryDir, `${cityName}.csv`);
     
-    if (fs.existsSync(cityPath)) {
-      return country;
+    for (const city of possibleCityNames) {
+      const cityPath = path.join(countryDir, `${city}.csv`);
+      
+      if (fs.existsSync(cityPath)) {
+        return country;
+      }
     }
   }
   
